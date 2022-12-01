@@ -29,6 +29,10 @@ def signup(request):
             messages.error(request,"Passwords don't match!")
             return redirect('home')
 
+        if not username.isalnum():
+            messages.error(request,"You can't use symbols in username!")    
+            return redirect('home')
+
             
         myuser = User.objects.create_user(username,email,pass1)
         myuser.first_name = fname
