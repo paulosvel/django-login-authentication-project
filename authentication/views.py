@@ -3,6 +3,8 @@ from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from  loginsystem import settings 
+from django.core.mail import send_mail
 # Create your views here.
 def home(request):
     return render(request,"authentication/index.html")
@@ -40,6 +42,12 @@ def signup(request):
         myuser.save()
     
         messages.success(request,"You have successfully created an account!!")
+
+        subject = "Joki Login System"
+        message = "Greetings" + myuser.first_name + "We have sent you a confirmation email, please confirm your email address in order to activate your account!"
+        from_email = settings.EMAIL_HOST_USER
+        to_list = [myuser.email]
+        send_mail(subject,message,from_email,to_list,fail_silently=True)
     
         return redirect ('signin')
     
