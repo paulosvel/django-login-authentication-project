@@ -1,10 +1,17 @@
+from django.contrib.sites.shortcuts import get_current_site
 from django.shortcuts import redirect,render
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
-from  loginsystem import settings 
+from loginsystem import settings 
 from django.core.mail import send_mail
+from django.template.loader import render_to_string
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes,force_text
+from django.core.mail import EmailMessage, send_mail
+from . tokens import generate_token
+
 # Create your views here.
 def home(request):
     return render(request,"authentication/index.html")
@@ -39,15 +46,38 @@ def signup(request):
         myuser = User.objects.create_user(username,email,pass1)
         myuser.first_name = fname
         myuser.last_name = lname
+        myuser.is_active = False
         myuser.save()
     
-        messages.success(request,"You have successfully created an account!!")
+        messages.success(request,"You have successfully created an account!! Go to your email and accept the confirmation link to activate your acccount!")
 
         subject = "Joki Login System"
         message = "Greetings" + myuser.first_name + "We have sent you a confirmation email, please confirm your email address in order to activate your account!"
         from_email = settings.EMAIL_HOST_USER
         to_list = [myuser.email]
         send_mail(subject,message,from_email,to_list,fail_silently=True)
+
+        #Email Confirm
+        current_site = get_current_site(request)
+        email_subject = "Email Confirmation Joki Login System"
+        message2 = render_to_string('email_confirmation.html'), {
+            'name': myuser.first_name,
+            'domain': current_site.domain,
+            'uid' : urlsafe_base64_encode(force_bytes(user.pk)),
+            'token' : generate_token.make_token(myuser),
+        
+        }
+        email = EmailMessage(
+            email_subject,
+            message2,
+            settings.EMAIL_HOST_USER,
+            [myuser.email],
+        )
+        email.fail_silently = True
+        email.send()
+
+
+
     
         return redirect ('signin')
     
